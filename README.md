@@ -335,10 +335,10 @@ This unlocks analytics like:
 
 | Name | Role |
 |---|---|
-| **Aaron Rao** | contributor |
+| **Aaron Rao** | Lead |
 | **Aditi Karn** | Contributor |
 | **Abhinand Meethele Valappil** | Contributor |
-| **Shreyansh Arora** | Lead |
+| **Shreyansh Arora** | Contributor |
 
 *Built by the Neuralink Team*
 
