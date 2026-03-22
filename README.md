@@ -263,11 +263,12 @@ pip install -r requirements.txt
 ### 4. Run the API
 
 ```bash
-uvicorn app.main:app --reload```
-
-### 5. Open API Docs
+uvicorn app.main:app --reload
 
 ```
+### 5. Local
+```
+
 http://localhost:8000/docs
 ```
 
