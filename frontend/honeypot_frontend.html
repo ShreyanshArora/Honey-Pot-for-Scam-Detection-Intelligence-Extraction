@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>HoneyPot — Scam Detection System</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080c14;
+      --surface: #0d1520;
+      --surface2: #111a28;
+      --border: rgba(0,200,255,0.12);
+      --border-bright: rgba(0,200,255,0.35);
+      --cyan: #00c8ff;
+      --cyan-dim: rgba(0,200,255,0.6);
+      --red: #ff4b5c;
+      --green: #00e5a0;
+      --amber: #ffb340;
+      --text: #c8d8e8;
+      --text-dim: #5a7090;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Glow blobs */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      top: -200px; left: -200px;
+      background: radial-gradient(circle, rgba(0,200,255,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      animation: blobDrift 25s ease-in-out infinite;
+    }
+
+    @keyframes blobDrift {
+      0%, 100% { transform: translate(0,0); }
+      50% { transform: translate(120px, 80px); }
+    }
+
+    /* ─── NAV ─────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8,12,20,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-logo .honeypot-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--cyan), #0070ff);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--cyan);
+      border-color: var(--border);
+    }
+
+    .tab-btn.active {
+      background: rgba(0,200,255,0.1);
+      border-color: var(--border-bright);
+      color: var(--cyan);
+    }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--green);
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    /* ─── PAGES ─────────────────────────── */
+    .page { display: none; position: relative; z-index: 1; }
+    .page.active { display: block; }
+
+    /* ─── DEMO PAGE ─────────────────────── */
+    .demo-page {
+      padding: 28px 28px 100px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .page-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    /* ─── PANELS ─────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .panel-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    .panel-header-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--cyan-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    /* ─── MESSAGES ─────────────────────── */
+    .msg {
+      margin: 10px 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      max-width: 78%;
+      font-size: 14px;
+      line-height: 1.6;
+      word-wrap: break-word;
+      animation: msgIn 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    @keyframes msgIn {
+      from { opacity:0; transform: translateY(10px); }
+      to { opacity:1; transform: translateY(0); }
+    }
+
+    .scammer {
+      background: rgba(255,75,92,0.12);
+      border: 1px solid rgba(255,75,92,0.25);
+      color: #ffb3bb;
+      border-radius: 10px 10px 10px 2px;
+    }
+
+    .scammer::before {
+      content: 'SCAMMER';
+      display: block;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--red);
+      letter-spacing: 1.5px;
+      margin-bottom: 5px;
+    }
+
+    .agent {
+      background: rgba(0,200,255,0.08);
+      border: 1px solid rgba(0,200,255,0.18);
+      color: #a8d8f0;
+      margin-left: auto;
+      border-radius: 10px 10px 2px 10px;
+    }
+
+    .agent::before {
+      content: 'AGENT';
+      display: block;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--cyan);
+      letter-spacing: 1.5px;
+      margin-bottom: 5px;
+      text-align: right;
+    }
+
+    /* ─── BADGE ─────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .badge-dot { width:8px; height:8px; border-radius:50%; }
+
+    .badge.safe {
+      background: rgba(0,229,160,0.08);
+      border: 1px solid rgba(0,229,160,0.25);
+      color: var(--green);
+    }
+
+    .badge.safe .badge-dot { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+
+    .badge.scam {
+      background: rgba(255,75,92,0.1);
+      border: 1px solid rgba(255,75,92,0.3);
+      color: var(--red);
+    }
+
+    .badge.scam .badge-dot { background: var(--red); box-shadow: 0 0 6px var(--red); animation: pulse 1s infinite; }
+
+    /* ─── INTEL BUTTONS ─────────────────── */
+    .intel-btn {
+      width: 100%;
+      padding: 11px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .intel-btn:hover {
+      border-color: var(--border-bright);
+      color: var(--cyan);
+      background: rgba(0,200,255,0.05);
+    }
+
+    .intel-btn.danger {
+      border-color: rgba(255,75,92,0.2);
+      color: rgba(255,75,92,0.6);
+    }
+
+    .intel-btn.danger:hover {
+      border-color: rgba(255,75,92,0.5);
+      color: var(--red);
+      background: rgba(255,75,92,0.05);
+    }
+
+    .intel-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 14px 0;
+    }
+
+    /* ─── INTEL TABLE ─────────────────── */
+    .intel-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .intel-table th {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      background: transparent;
+    }
+
+    .intel-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(0,200,255,0.05);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .intel-table tr:hover td { background: rgba(0,200,255,0.03); }
+
+    .intel-table .key-cell {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--cyan-dim);
+      white-space: nowrap;
+    }
+
+    .val-tag {
+      display: inline-block;
+      background: rgba(0,200,255,0.08);
+      border: 1px solid rgba(0,200,255,0.15);
+      color: var(--cyan-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin: 2px;
+    }
+
+    /* ─── JSON VIEW ─────────────────────── */
+    .json-block {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: #7ec8e3;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.8;
+      overflow-x: auto;
+      margin-top: 8px;
+      white-space: pre-wrap;
+    }
+
+    /* ─── INPUT BAR ─────────────────────── */
+    .input-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 50;
+      background: rgba(8,12,20,0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      padding: 16px 28px;
+    }
+
+    .input-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .msg-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .msg-input:focus { border-color: var(--border-bright); }
+    .msg-input::placeholder { color: var(--text-dim); }
+
+    .send-btn {
+      background: linear-gradient(135deg, var(--cyan), #0070ff);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      color: #080c14;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .send-btn:hover { opacity: 0.85; transform: scale(1.02); }
+    .send-btn:active { transform: scale(0.98); }
+
+    /* ─── ANALYTICS PAGE ─────────────────── */
+    .analytics-page {
+      padding: 28px 28px 60px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0.4;
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--cyan);
+      line-height: 1;
+    }
+
+    .stat-card.red-accent .stat-value { color: var(--red); }
+    .stat-card.red-accent::before { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+
+    .stat-card.green-accent .stat-value { color: var(--green); }
+    .stat-card.green-accent::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+
+    .data-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .data-panel-header {
+      padding: 14px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--cyan-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .data-panel-body { padding: 20px; }
+
+    .analytics-pre {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: var(--green);
+      padding: 16px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.9;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .analytics-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .analytics-table th {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .analytics-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(0,200,255,0.04);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .analytics-table tr:hover td { background: rgba(0,200,255,0.03); }
+
+    .session-id {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .scam-badge-pill {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 4px;
+    }
+
+    .scam-badge-pill.yes {
+      background: rgba(255,75,92,0.12);
+      border: 1px solid rgba(255,75,92,0.3);
+      color: var(--red);
+    }
+
+    .scam-badge-pill.no {
+      background: rgba(0,229,160,0.08);
+      border: 1px solid rgba(0,229,160,0.2);
+      color: var(--green);
+    }
+
+    .loading-skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s infinite;
+      border-radius: 8px;
+      height: 16px;
+      margin: 8px 0;
+    }
+
+    @keyframes skeleton {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ─── SCROLLBAR ─────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,200,255,0.4); }
+
+    /* ─── RESPONSIVE ─────────────────────── */
+    @media (max-width: 900px) {
+      .demo-grid { grid-template-columns: 1fr; }
+      .panel { height: 480px; }
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+      nav { padding: 0 16px; }
+      .demo-page, .analytics-page { padding: 20px 16px 90px; }
+    }
+
+    @media (max-width: 500px) {
+      .stat-grid { grid-template-columns: 1fr; }
+      .nav-status { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <div class="honeypot-icon">🍯</div>
+    HONEYPOT
+  </div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('demo', this)">LIVE DEMO</button>
+    <button class="tab-btn" onclick="switchTab('analytics', this)">ANALYTICS</button>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEM ACTIVE
+  </div>
+</nav>
+
+<!-- ════════════════════════════════ DEMO PAGE ════════════════════════════════ -->
+<div id="demoPage" class="page active demo-page">
+
+  <div class="page-title">Live Scam Detection Interface</div>
+
+  <div class="demo-grid">
+
+    <!-- CHAT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--red)"></div>
+        <div class="panel-dot" style="background:var(--amber); margin-left:4px"></div>
+        <div class="panel-dot" style="background:var(--green); margin-left:4px"></div>
+        <span class="panel-header-title" style="margin-left:8px">Conversation Monitor</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);" id="sessionLabel">SESSION ACTIVE</span>
+      </div>
+      <div class="panel-body" id="chatMessages">
+        <div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;opacity:0.25;">
+          <div style="font-size:32px">💬</div>
+          <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--text-dim)">AWAITING INPUT</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTELLIGENCE PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--cyan)"></div>
+        <span class="panel-header-title" style="margin-left:8px">Intelligence Analysis</span>
+      </div>
+      <div class="panel-body" id="intelBody">
+
+        <div id="scamBadge" class="badge safe">
+          <div class="badge-dot"></div>
+          NO SCAM DETECTED
+        </div>
+
+        <button class="intel-btn danger" onclick="endChat()">
+          ⏹ &nbsp;END CONVERSATION &amp; SAVE
+        </button>
+
+        <div class="intel-divider"></div>
+
+        <button class="intel-btn" onclick="showIntel()">
+          ⬡ &nbsp;EXTRACT INTELLIGENCE
+        </button>
+        <div id="intelTable"></div>
+
+        <button class="intel-btn" onclick="showJson()">
+          ⬢ &nbsp;VIEW RAW JSON DEBUG
+        </button>
+        <pre id="jsonView" class="json-block" style="display:none;"></pre>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════ ANALYTICS PAGE ════════════════════════════════ -->
+<div id="analyticsPage" class="page analytics-page">
+
+  <div class="page-title">System Analytics &amp; Intelligence Reports</div>
+
+  <!-- STAT CARDS -->
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-card"><div class="stat-label">Total Conversations</div><div class="loading-skeleton" style="width:60px;height:36px;border-radius:4px"></div></div>
+    <div class="stat-card red-accent"><div class="stat-label">Scam Detected</div><div class="loading-skeleton" style="width:60px;height:36px;border-radius:4px"></div></div>
+    <div class="stat-card green-accent"><div class="stat-label">Clean Conversations</div><div class="loading-skeleton" style="width:60px;height:36px;border-radius:4px"></div></div>
+  </div>
+
+  <!-- TOP UPI / PHONES / KEYWORDS -->
+  <div id="intelPanels"></div>
+
+  <!-- RECENT CONVERSATIONS -->
+  <div class="data-panel" id="recentPanel">
+    <div class="data-panel-header">🕐 &nbsp;Recent Conversations</div>
+    <div class="data-panel-body">
+      <div class="loading-skeleton"></div>
+      <div class="loading-skeleton" style="width:80%"></div>
+      <div class="loading-skeleton" style="width:65%"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- INPUT BAR (demo only) -->
+<div class="input-bar" id="inputBar">
+  <div class="input-inner">
+    <input class="msg-input" id="messageInput"
+      placeholder="Paste or type a suspicious message to test the honeypot..."
+      onkeypress="if(event.key==='Enter') sendMessage()" />
+    <button class="send-btn" onclick="sendMessage()">SEND →</button>
+  </div>
+</div>
+
+<script>
+/* ─── CONFIG ─────────────────────────── */
+const DEMO_URL   = "https://honey-pot-for-scam-detection.onrender.com/demo-chat";
+const END_URL    = "https://honey-pot-for-scam-detection.onrender.com/end-chat";
+const ADMIN_BASE = "https://honey-pot-for-scam-detection.onrender.com/admin";
+
+/* ─── STATE ─────────────────────────── */
+let sessionId = generateSessionId();
+let lastDebug = {};
+let chatInitialized = false;
+
+/* ─── TABS ─────────────────────────── */
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.getElementById('demoPage').classList.toggle('active', tab === 'demo');
+  document.getElementById('analyticsPage').classList.toggle('active', tab === 'analytics');
+  document.getElementById('inputBar').style.display = tab === 'demo' ? 'block' : 'none';
+
+  if (tab === 'analytics') loadAnalytics();
+}
+
+/* ─── UTILS ─────────────────────────── */
+function generateSessionId() {
+  return "demo-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+}
+
+function addMessage(text, sender) {
+  const chat = document.getElementById("chatMessages");
+  if (!chatInitialized) {
+    chat.innerHTML = "";
+    chatInitialized = true;
+  }
+  const div = document.createElement("div");
+  div.className = "msg " + sender;
+  div.innerText = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function clearUI() {
+  document.getElementById("chatMessages").innerHTML = `
+    <div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;opacity:0.25;">
+      <div style="font-size:32px">💬</div>
+      <div style="font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--text-dim)">AWAITING INPUT</div>
+    </div>`;
+  chatInitialized = false;
+  document.getElementById("intelTable").innerHTML = "";
+  document.getElementById("jsonView").innerText = "";
+  document.getElementById("jsonView").style.display = "none";
+  lastDebug = {};
+  updateBadge();
+}
+
+/* ─── CHAT ─────────────────────────── */
+async function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "scammer");
+  input.value = "";
+
+  const payload = {
+    sessionId,
+    message: { sender: "scammer", text, timestamp: Date.now() },
+    conversationHistory: [],
+    metadata: { channel: "SMS", language: "English", locale: "IN" }
+  };
+
+  const response = await fetch(DEMO_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+  addMessage(data.reply || "No reply", "agent");
+
+  if (data.debug) { lastDebug = data.debug; updateBadge(); }
+}
+
+async function endChat() {
+  await fetch(END_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId })
+  });
+  alert("Conversation saved. New session started.");
+  clearUI();
+  sessionId = generateSessionId();
+}
+
+/* ─── BADGE ─────────────────────────── */
+function updateBadge() {
+  const badge = document.getElementById("scamBadge");
+  if (lastDebug.scamDetected) {
+    badge.className = "badge scam";
+    badge.innerHTML = `<div class="badge-dot"></div> SCAM DETECTED`;
+  } else {
+    badge.className = "badge safe";
+    badge.innerHTML = `<div class="badge-dot"></div> NO SCAM DETECTED`;
+  }
+}
+
+/* ─── INTELLIGENCE ─────────────────── */
+function showIntel() {
+  const intel = lastDebug.extractedIntelligence || {};
+  const keys = Object.keys(intel);
+  if (!keys.length) {
+    document.getElementById("intelTable").innerHTML =
+      `<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:12px 0;letter-spacing:1px;">NO INTELLIGENCE EXTRACTED YET</div>`;
+    return;
+  }
+  let html = `<table class="intel-table"><thead><tr><th>Type</th><th>Extracted Values</th></tr></thead><tbody>`;
+  for (const key in intel) {
+    const vals = intel[key].length
+      ? intel[key].map(v => `<span class="val-tag">${v}</span>`).join('')
+      : `<span style="color:var(--text-dim);font-size:12px">—</span>`;
+    html += `<tr><td class="key-cell">${key}</td><td>${vals}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  document.getElementById("intelTable").innerHTML = html;
+}
+
+function showJson() {
+  const view = document.getElementById("jsonView");
+  view.style.display = "block";
+  view.innerText = JSON.stringify(lastDebug, null, 2);
+}
+
+/* ─── ANALYTICS ─────────────────────── */
+async function loadAnalytics() {
+  try {
+    const [statsRes, recentRes] = await Promise.all([
+      fetch(`${ADMIN_BASE}/stats`),
+      fetch(`${ADMIN_BASE}/recent`)
+    ]);
+    const stats = await statsRes.json();
+    const recent = await recentRes.json();
+
+    renderStats(stats);
+    renderRecent(recent);
+  } catch(e) {
+    document.getElementById("statGrid").innerHTML =
+      `<div style="grid-column:1/-1;font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:1px">FAILED TO LOAD — API UNAVAILABLE</div>`;
+  }
+}
+
+function renderStats(data) {
+  document.getElementById("statGrid").innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Conversations</div>
+      <div class="stat-value">${data.totalConversations ?? '—'}</div>
+    </div>
+    <div class="stat-card red-accent">
+      <div class="stat-label">Scam Detected</div>
+      <div class="stat-value">${data.scamConversations ?? '—'}</div>
+    </div>
+    <div class="stat-card green-accent">
+      <div class="stat-label">Clean Conversations</div>
+      <div class="stat-value">${data.nonScamConversations ?? '—'}</div>
+    </div>`;
+
+  let panels = '';
+  const sections = [
+    { key: 'topUpiIds', label: '💳  Top UPI IDs', icon: '💳' },
+    { key: 'topPhoneNumbers', label: '📱  Top Phone Numbers', icon: '📱' },
+    { key: 'topKeywords', label: '🔑  Top Keywords', icon: '🔑' }
+  ];
+
+  sections.forEach(s => {
+    panels += `
+      <div class="data-panel">
+        <div class="data-panel-header">${s.label}</div>
+        <div class="data-panel-body">
+          <pre class="analytics-pre">${JSON.stringify(data[s.key], null, 2)}</pre>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById("intelPanels").innerHTML = panels;
+}
+
+function renderRecent(data) {
+  let html = `
+    <div class="data-panel-header">🕐 &nbsp;Recent Conversations</div>
+    <div class="data-panel-body">
+      <table class="analytics-table">
+        <thead><tr>
+          <th>Session ID</th>
+          <th>Scam Detected</th>
+          <th>Messages</th>
+        </tr></thead>
+        <tbody>`;
+
+  data.forEach(c => {
+    const isScam = c.scamDetected === true || c.scamDetected === "true";
+    html += `
+      <tr>
+        <td><span class="session-id">${c.sessionId}</span></td>
+        <td><span class="scam-badge-pill ${isScam ? 'yes' : 'no'}">${isScam ? 'SCAM' : 'CLEAN'}</span></td>
+        <td style="font-family:var(--mono);font-size:13px">${c.totalMessages}</td>
+      </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  document.getElementById("recentPanel").innerHTML = html;
+}
+</script>
+
+</body>
+</html>

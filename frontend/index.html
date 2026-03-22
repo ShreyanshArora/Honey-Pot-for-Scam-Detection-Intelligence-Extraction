@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Agentic HoneyPot Demo</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 25%, #2c5364 50%, #4a90e2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(30, 60, 114, 0.1) 0%, transparent 50%);
+            animation: drift 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(50px, 50px) rotate(5deg); }
+        }
+
+        h2 {
+            text-align: center;
+            background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 50%, #1e88e5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 36px;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        #wrapper {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #chat {
+            width: 550px;
+            height: 650px;
+            background: linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
+            border-radius: 20px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(74, 144, 226, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #chat::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #4a90e2 25%, 
+                #64b5f6 50%, 
+                #4a90e2 75%, 
+                transparent 100%);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(30, 60, 114, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        }
+
+        #intel {
+            width: 510px;
+            height: 650px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+            border-radius: 20px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 
+                0 20px 60px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(106, 137, 204, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #intel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #6a89cc 25%, 
+                #90caf9 50%, 
+                #6a89cc 75%, 
+                transparent 100%);
+        }
+
+        .intel-header {
+            background: linear-gradient(135deg, #4a69bd 0%, #6a89cc 50%, #90caf9 100%);
+            color: white;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(74, 105, 189, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intel-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.15) 50%,
+                transparent 70%
+            );
+            animation: shimmer 3s infinite;
+        }
+
+        .intel-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f5f9ff 0%, #ffffff 100%);
+        }
+
+        .msg {
+            margin: 12px 0;
+            padding: 14px 18px;
+            border-radius: 18px;
+            max-width: 75%;
+            line-height: 1.6;
+            word-wrap: break-word;
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .scammer {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #ff4757 100%);
+            color: white;
+            text-align: left;
+            box-shadow: 
+                0 4px 15px rgba(255, 107, 107, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .agent {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #2e6da4 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+            box-shadow: 
+                0 4px 15px rgba(74, 144, 226, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        #inputArea {
+            width: 100%;
+            max-width: 1084px;
+            margin: 24px auto 0;
+            display: flex;
+            gap: 12px;
+        }
+
+        input {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 15px;
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #4a90e2, #64b5f6) border-box;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 
+                0 0 0 3px rgba(74, 144, 226, 0.2),
+                0 4px 20px rgba(74, 144, 226, 0.3);
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #2e6da4, #4a90e2) border-box;
+        }
+
+        button {
+            padding: 14px 28px;
+            cursor: pointer;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 50%, #2e6da4 100%);
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 4px 15px rgba(74, 144, 226, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            width: 100%;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.3), 
+                transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 25px rgba(74, 144, 226, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #5a9ff2 0%, #4580cd 50%, #357ebd 100%);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #inputArea button {
+            width: auto;
+            margin-bottom: 0;
+        }
+
+        button[onclick="endChat()"] {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #445566 100%);
+            box-shadow: 
+                0 4px 15px rgba(44, 62, 80, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        button[onclick="endChat()"]:hover {
+            background: linear-gradient(135deg, #34495e 0%, #445566 50%, #556677 100%);
+            box-shadow: 0 6px 25px rgba(44, 62, 80, 0.5);
+        }
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(74, 144, 226, 0.3) 50%, 
+                transparent 100%);
+            margin: 16px 0;
+        }
+
+        .badge {
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 16px;
+            font-size: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .scam {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #ff4757 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .safe {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 50%, #2f9e44 100%);
+            box-shadow: 0 4px 15px rgba(81, 207, 102, 0.4);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 12px rgba(0,0,0,0.1),
+                0 0 0 1px rgba(74, 144, 226, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #e3f2fd;
+            padding: 14px;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
+            color: #1565c0;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.8px;
+        }
+
+        td {
+            color: #495057;
+            font-size: 14px;
+            background: linear-gradient(to right, #ffffff 0%, #f8fbff 100%);
+        }
+
+        tr:hover td {
+            background: linear-gradient(to right, #f0f7ff 0%, #e3f2fd 100%);
+        }
+
+        pre {
+            background: linear-gradient(135deg, #0f2027 0%, #1e3c72 50%, #2a5298 100%);
+            color: #90caf9;
+            padding: 18px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.8;
+            font-family: 'Courier New', monospace;
+            margin-top: 12px;
+            box-shadow: 
+                0 4px 15px rgba(0,0,0,0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar,
+        .intel-content::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track,
+        .intel-content::-webkit-scrollbar-track {
+            background: linear-gradient(to bottom, #e3f2fd 0%, #f5f9ff 100%);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb,
+        .intel-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #64b5f6 0%, #4a90e2 100%);
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover,
+        .intel-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #42a5f5 0%, #357abd 100%);
+            background-clip: padding-box;
+        }
+
+        @media (max-width: 1200px) {
+            #wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #chat, #intel {
+                width: 100%;
+                max-width: 600px;
+            }
+
+            #inputArea {
+                max-width: 600px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🍯 Agentic Honey-Pot Live Demo</h2>
+
+<div id="wrapper">
+
+    <!-- CHAT PANEL -->
+    <div id="chat">
+        <div class="chat-header">💬 Conversation</div>
+        <div class="chat-messages" id="chatMessages"></div>
+    </div>
+
+    <!-- INTELLIGENCE PANEL -->
+    <div id="intel">
+        <div class="intel-header">🔍 Intelligence Dashboard</div>
+        <div class="intel-content">
+            <div id="scamBadge" class="badge safe">No Scam Detected</div>
+
+            <button onclick="endChat()">
+                End Chat
+            </button>
+
+            <hr/>
+
+            <button onclick="showIntel()">Get Extracted Intelligence</button>
+            <div id="intelTable"></div>
+
+            <button onclick="showJson()">View Raw JSON</button>
+            <pre id="jsonView" style="display:none;"></pre>
+        </div>
+    </div>
+</div>
+
+<div id="inputArea">
+    <input id="messageInput" placeholder="Type scam message..." onkeypress="if(event.key==='Enter') sendMessage()" />
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+/* ================= SESSION ================= */
+let sessionId = generateSessionId();
+const apiUrl = "https://honey-pot-for-scam-detection.onrender.com/demo-chat";
+const endChatUrl = "https://honey-pot-for-scam-detection.onrender.com/end-chat";
+let lastDebug = {};
+
+/* ================= UTILITIES ================= */
+function generateSessionId() {
+    return "demo-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+}
+
+function addMessage(text, sender) {
+    const chat = document.getElementById("chatMessages");
+    const div = document.createElement("div");
+    div.className = "msg " + sender;
+    div.innerText = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function clearUI() {
+    document.getElementById("chatMessages").innerHTML = "";
+    document.getElementById("intelTable").innerHTML = "";
+    document.getElementById("jsonView").innerText = "";
+    document.getElementById("jsonView").style.display = "none";
+    lastDebug = {};
+    updateBadge();
+}
+
+/* ================= CHAT ================= */
+async function sendMessage() {
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "scammer");
+    input.value = "";
+
+    const payload = {
+        sessionId: sessionId,
+        message: {
+            sender: "scammer",
+            text: text,
+            timestamp: Date.now()
+        },
+        conversationHistory: [],
+        metadata: {
+            channel: "SMS",
+            language: "English",
+            locale: "IN"
+        }
+    };
+
+    const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    addMessage(data.reply || "No reply", "agent");
+
+    if (data.debug) {
+        lastDebug = data.debug;
+        updateBadge();
+    }
+}
+
+/* ================= END CHAT ================= */
+async function endChat() {
+    await fetch(endChatUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId })
+    });
+
+    alert("Conversation saved. New chat started.");
+
+    clearUI();
+    sessionId = generateSessionId();
+}
+
+/* ================= INTELLIGENCE ================= */
+function updateBadge() {
+    const badge = document.getElementById("scamBadge");
+    if (lastDebug.scamDetected) {
+        badge.className = "badge scam";
+        badge.innerText = "Scam Detected";
+    } else {
+        badge.className = "badge safe";
+        badge.innerText = "No Scam Detected";
+    }
+}
+
+function showIntel() {
+    const intel = lastDebug.extractedIntelligence || {};
+    let html = "<table><tr><th>Type</th><th>Values</th></tr>";
+
+    for (const key in intel) {
+        html += `
+            <tr>
+                <td>${key}</td>
+                <td>${intel[key].length ? intel[key].join(", ") : "-"}</td>
+            </tr>`;
+    }
+
+    html += "</table>";
+    document.getElementById("intelTable").innerHTML = html;
+}
+
+function showJson() {
+    const view = document.getElementById("jsonView");
+    view.style.display = "block";
+    view.innerText = JSON.stringify(lastDebug, null, 2);
+}
+</script>
+
+</body>
+</html>
